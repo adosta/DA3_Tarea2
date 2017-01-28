@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" type="text/css" href="node_modules\bootstrap\dist\css\bootstrap.min.css">
+	<script type="text/javascript" src="node_modules\jquery\dist\jquery.min.js"></script>
+	<script type="text/javascript" src="node_modules\bootstrap\dist\js\bootstrap.min.js"></script>
+</head>
+<body>
+	<div id="main" class="container">
+		<div class="panel panel-primary" name="agregar">
+		 	<div class="panel-heading">Agregar producto</div>
+				<div class="panel-body">
+				  <form action="" id="frmProducto" >
+				  	<input type="hidden" id="productoID">
+					  <div class="col-md-6 form-group">
+					  	Producto: <input type="text" name="nombre" id="nombre" class="form-control"><br>
+					  </div>
+					  <div class="col-md-6 form-group">
+					  	Precio: <input type="text" name="precio" id="precio" class="form-control"><br>
+					  </div>
+					  <button class="btn btn-primary" onclick="submit()" id="btnAgregar">Agregar</button>
+
+					  <button class="btn btn-primary" onclick="editarPost()" id="btnEditar">Editar</button>
+				  </form>
+		  		</div>
+		</div>
+
+		<div class="panel panel-primary" name="agregar">
+			<div class="panel-heading">Productos</div>
+			<table class="table table-stripped" id="tblProductos">
+				<tr id="cabecera">
+					<th>ID</th>
+					<th>Apellido</th>
+					<th>Precio</th>
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript">
+
+	tomarDatosDeServidor();
+
+	function submit(){
+		var nuevoProducto = $('#frmProducto').serialize();
+		//Se declara llamada asincrona para crear producto
+		$.ajax({
+			url:'http://localhost:51486/Producto/createProducto',
+			type:'POST',
+			dataType:'JSON', //El formato de lo que recibes
+			data: nuevoProducto,
+			success: function(result,status,xhr){
+				tomarDatosDeServidor();
+			},
+			error: function(xhr,status,error){
+				alert('No se conecto :(');
+			},
+		});
+	}
+
+	/*$('#frmProducto').submit(function (e) {
+		//Prevenimos que se envien los datos y haga refresh
+		e.preventDefault();
+		//Serializar la forma con los datos del nuevo producto
+		var nuevoProducto = $(this).serialize();
+		//Se declara llamada asincrona para crear producto
+		$.ajax({
+			url:'http://localhost:51486/Producto/createProducto',
+			type:'POST',
+			dataType:'JSON', //El formato de lo que recibes
+			data: nuevoProducto,
+			success: function(result,status,xhr){
+				tomarDatosDeServidor();
+			},
+			error: function(xhr,status,error){
+				alert('No se conecto :(');
+			},
+		});
+	});*/
+
+	function editarPost(){
+		$("#btnEditar").hide();
+		$.ajax({
+			url:'http://localhost:51486/Producto/editProducto',
+			type:'POST',
+			dataType:'JSON', //El formato de lo que recibes
+			ContentType:'application/Json; charset="UTF-8"', 
+			data:{id:$('#productoID').val(),nombre:$('#nombre').val(),precio:$('#precio').val()},
+			success: function(result,status,xhr){
+				tomarDatosDeServidor();
+			},
+			error: function(xhr,status,error){
+				alert('error en editarPost');
+			},
+		})
+	}
+
+	/*$('#btnEditar').click(function(){
+		$.ajax({
+			url:'http://localhost:51486/Producto/editProducto',
+			type:'POST',
+			dataType:'JSON', //El formato de lo que recibes
+			ContentType:'application/Json; charset="UTF-8"', 
+			data:{id:$('#productoID').val(),nombre:$('#nombre').val(),precio:$('#precio').val()},
+			success: function(result,status,xhr){
+				tomarDatosDeServidor();
+			},
+			error: function(xhr,status,error){
+				alert('No se conecto :(');
+			},
+		})
+	});*/
+
+	function editar(id){
+		$("#btnEditar").show();
+		$.ajax({
+			url:'http://localhost:51486/Producto/editProducto',
+			type:'GET',
+			dataType:'JSON', //El formato de lo que recibes
+			ContentType:'application/Json; charset="UTF-8"', 
+			data:{id:id},
+			success: function(result,status,xhr){
+				$('#productoID').val(result.id)
+				$('#nombre').val(result.nombre);
+				$('#precio').val(result.precio);
+			},
+			error: function(xhr,status,error){
+				alert('No se conecto :(');
+			},
+		})
+	}
+
+	function borrar(id){
+			$.ajax({
+				url:'http://localhost:51486/Producto/eraseProducto',
+				type:'POST',
+				dataType:'JSON', //El formato de lo que recibes
+				ContentType:'application/Json; charset="UTF-8"', 
+				data:{id:id},
+				success: function(result,status,xhr){
+					tomarDatosDeServidor();
+				},
+				error: function(xhr,status,error){
+					alert('No se conecto :(');
+				},
+			});
+
+		}
+
+	function tomarDatosDeServidor(){
+		//Limpiar la tabla
+		$("#btnEditar").hide();
+		$('#tblProductos >').children().not('#cabecera').remove();
+
+		$.ajax({
+			url: 'http://localhost:51486/Producto/getJsonList',
+			type: 'GET',
+			dataType:'JSON',
+			success:function(result,status,xhr){
+				productos = result;
+
+				for (var i=0; i < productos.length; i++){
+					insertarRenglon(productos[i])
+				}
+			},
+			error: function(xhr,status,error){
+				alert('No esta disponible el servidor.');
+			}, 
+		});
+	}
+
+	function insertarRenglon(producto){
+		var nuevoTR = $('<tr>')
+		.append($('<td>').html(producto.productoID))
+		.append($('<td>').html(producto.nombre))
+		.append($('<td>').html(producto.precio))
+		.append($('<td>').html('<i onclick="editar('+producto.productoID+')" class="glyphicon glyphicon-pencil"></i>'))
+		.append($('<td>').html('<i onclick="borrar('+producto.productoID+')" class="glyphicon glyphicon-remove"></i>'));
+
+		$('#tblProductos').append(nuevoTR);
+	}
+
+		
+</script>	
+</html>
